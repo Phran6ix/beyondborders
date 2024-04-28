@@ -21,7 +21,7 @@ export class UserService {
       throw new HttpException("User already exists", HttpStatus.BAD_REQUEST)
     }
     const salt = await bcrypt.genSalt()
-    const password = bcrypt.hash(payload.password, salt)
+    const password = await bcrypt.hash(payload.password, salt)
 
     const newUser = new this.userModel({ ...payload, password })
     await newUser.save()
@@ -35,6 +35,11 @@ export class UserService {
 
     if (!user) {
       throw new NotFoundException("User with email does not exist")
+    }
+
+    const verifyPassword = await bcrypt.compare(payload.password, user.password)
+    if(!verifyPassword) {
+      throw new HttpException("Invalid password", HttpStatus.BAD_REQUEST)
     }
 
     const token = this.jwtService.sign({ id: user._id })
